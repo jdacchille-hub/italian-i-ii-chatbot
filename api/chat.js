@@ -4,15 +4,21 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-export default async function handler(req, res) {
-  const userMessage = req.body.message;
+export const config = {
+  runtime: "edge"
+};
 
-  const completion = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [
-      {
-        role: "system",
-        content: `
+export default async function handler(req) {
+  try {
+    const body = await req.json();
+    const userMessage = body.message;
+
+    const completion = await client.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        {
+          role: "system",
+          content: `
 You are a formal academic tutor for Italian I and Italian II students.
 
 Your role is to:
@@ -48,13 +54,22 @@ CONVERSATION MODE:
 TEACHING STYLE:
 - Formal, respectful, encouraging
 `
-      },
-      { role: "user", content: userMessage }
-    ]
-  });
+        },
+        { role: "user", content: userMessage }
+      ]
+    });
 
-  res.status(200).json({
-    reply: completion.choices[0].message.content
-  });
+    return new Response(
+      JSON.stringify({
+        reply: completion.choices[0].message.content
+      }),
+      { headers: { "Content-Type": "application/json" } }
+    );
+
+  } catch (error) {
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500 }
+    );
+  }
 }
-
