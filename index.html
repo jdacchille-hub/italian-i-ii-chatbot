@@ -1,1 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Italian I–II Tutor</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f4f4;
+}
+
+#chat {
+  max-width: 650px;
+  margin: 20px auto;
+  background: white;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.user {
+  font-weight: bold;
+  margin-top: 10px;
+}
+
+.bot {
+  color: #003366;
+  margin-bottom: 10px;
+}
+
+input {
+  width: 78%;
+  padding: 8px;
+}
+
+button {
+  padding: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="chat">
+  <div class="bot">
+    Welcome. I am your Italian I–II academic tutor.<br>
+    You may ask grammar questions, submit writing, or practice conversation.
+  </div>
+</div>
+
+<div style="text-align:center;">
+  <input id="input" placeholder="Type your question or writing here">
+  <button onclick="send()">Submit</button>
+</div>
+
+<script>
+async function send() {
+  const input = document.getElementById("input");
+  const chat = document.getElementById("chat");
+
+  if (!input.value) return;
+
+  chat.innerHTML += `<div class="user">Student: ${input.value}</div>`;
+
+  const response = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message: input.value })
+  });
+
+  const data = await response.json();
+  chat.innerHTML += `<div class="bot">Tutor: ${data.reply}</div>`;
+
+  input.value = "";
+}
+</script>
+
+</body>
+</html>
 
