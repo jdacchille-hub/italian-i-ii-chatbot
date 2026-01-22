@@ -1,58 +1,40 @@
-export const config = {
-  runtime: "edge"
-};
+import fetch from "node-fetch";
 
-export default async function handler(req) {
+export default async function handler(req, res) {
   try {
-    const { message } = await req.json();
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
-    const response = await fetch("https://api.openai.com/v1/responses", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-      },
-      body: JSON.stringify({
-        model: "gpt-4.1-mini",
-        input: [
-          {
-            role: "system",
-            content: `
-You are a formal academic tutor for Italian I and Italian II students.
+    const { message } = req.body;
 
-Rules:
-- Use present tense and passato prossimo only
-- Explanations in English
-- Examples and conversation in Italian
-- Formal, encouraging tone
+    console.log("Message received:", message);
 
-Writing feedback format:
-1. Corrected Version
-2. Feedback (English bullets)
-3. Assessment (A–F)
-`
-          },
-          {
-            role: "user",
-            content: message
-          }
-        ]
-      })
+    const openaiResponse = await fetch(
+      "https://api.openai.com/v1/responses",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-4.1-mini",
+          input: message
+        })
+      }
+    );
+
+    const data = await openaiResponse.json();
+
+    console.log("OpenAI response received");
+
+    res.status(200).json({
+      reply: data.output_text
     });
 
-    const data = await response.json();
-
-    return new Response(
-      JSON.stringify({
-        reply: data.output_text
-      }),
-      { headers: { "Content-Type": "application/json" } }
-    );
-
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      { status: 500 }
-    );
+    console.error("ERROR:", error);
+    res.status(500).json({ error: error.toString() });
   }
 }
