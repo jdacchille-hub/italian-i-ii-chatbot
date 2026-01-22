@@ -1,74 +1,57 @@
-import OpenAI from "openai";
-
-const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
-
 export const config = {
   runtime: "edge"
 };
 
 export default async function handler(req) {
   try {
-    const body = await req.json();
-    const userMessage = body.message;
+    const { message } = await req.json();
 
-    const completion = await client.chat.completions.create({
-      model: "gpt-4.1-mini",
-      messages: [
-        {
-          role: "system",
-          content: `
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-mini",
+        messages: [
+          {
+            role: "system",
+            content: `
 You are a formal academic tutor for Italian I and Italian II students.
 
-Your role is to:
-- Answer grammar questions
-- Provide writing feedback and assessment
-- Hold guided, level-appropriate conversations in Italian
+Rules:
+- Use present tense and passato prossimo only
+- Explanations in English
+- Examples and conversation in Italian
+- Formal, encouraging tone
 
-GENERAL RULES:
-- Assume the student is in Italian I or II
-- Use only vocabulary appropriate for Italian I–II
-- Use ONLY present tense and passato prossimo
-- Do NOT use imperfetto, futuro, condizionale, or congiuntivo unless asked
-
-LANGUAGE RULES:
-- Explanations are in ENGLISH by default
-- Examples are in ITALIAN
-- Conversation responses are in ITALIAN
-
-WRITING FEEDBACK FORMAT:
+Writing feedback format:
 1. Corrected Version
-2. Feedback (bullet points in English)
-3. Assessment:
-   Grammar: A–F
-   Vocabulary: A–F
-   Comprehensibility: A–F
-   Overall Grade: A–F
-
-CONVERSATION MODE:
-- Use short, correct Italian sentences
-- Ask ONE follow-up question
-- Stay on familiar topics
-
-TEACHING STYLE:
-- Formal, respectful, encouraging
+2. Feedback (English bullets)
+3. Assessment (A–F)
 `
-        },
-        { role: "user", content: userMessage }
-      ]
+          },
+          {
+            role: "user",
+            content: message
+          }
+        ]
+      })
     });
+
+    const data = await response.json();
 
     return new Response(
       JSON.stringify({
-        reply: completion.choices[0].message.content
+        reply: data.choices[0].message.content
       }),
       { headers: { "Content-Type": "application/json" } }
     );
 
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.toString() }),
       { status: 500 }
     );
   }
